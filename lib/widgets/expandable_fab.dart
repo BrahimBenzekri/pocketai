@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'package:image_picker/image_picker.dart';
 import 'package:pocketai/screens/receipt_preview_screen.dart';
+import 'package:pocketai/widgets/manual_input_dialog.dart';
 
 class ExpandableFab extends StatefulWidget {
   const ExpandableFab({super.key});
@@ -184,9 +185,23 @@ class _ExpandableFabState extends State<ExpandableFab>
         const SnackBar(content: Text('Voice input coming soon!')),
       );
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Selected: $action')));
+      // Manual Input
+      final result = await showModalBottomSheet<Map<String, String>>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => const ManualInputDialog(),
+      );
+
+      if (result != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Added: ${result['quantity']}x ${result['name']} - ${result['price']} DA',
+            ),
+          ),
+        );
+      }
     }
   }
 }
