@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:pocketai/screens/receipt_preview_screen.dart';
 import 'package:pocketai/widgets/manual_input_dialog.dart';
-
 
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
@@ -22,7 +22,7 @@ class _ExpandableFabState extends State<ExpandableFab>
   late Animation<double> _expandAnimation;
   bool _isOpen = false;
   final ImagePicker _picker = ImagePicker();
-  
+
   // Voice Recording
   final AudioRecorder _audioRecorder = AudioRecorder();
   bool _isRecording = false;
@@ -226,23 +226,48 @@ class _ExpandableFabState extends State<ExpandableFab>
   }
 
   Future<void> _handleVoiceRecording() async {
+    print('Handling voice recording. Current state: $_isRecording');
     try {
       if (_isRecording) {
         // Stop recording
+        print('Stopping recording...');
         final path = await _audioRecorder.stop();
+        print('Recording stopped. Path returned: $path');
+
         setState(() {
           _isRecording = false;
         });
 
         if (path != null && mounted) {
+          final file = File(path);
+          if (await file.exists()) {
+            final size = await file.length();
+            print('File exists. Size: $size bytes');
+            if (size == 0) {
+              print('WARNING: File is empty!');
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Error: Recorded file is empty')),
+              );
+              return;
+            }
+          } else {
+            print('WARNING: File does not exist at path: $path');
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Error: Recorded file not found')),
+            );
+            return;
+          }
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Processing voice command...')),
           );
-          
+
           _toggle(); // Close FAB after recording stops
 
           try {
+            print('Sending voice file to API...');
             final result = await _apiService.sendVoice(path);
+            print('API Result: $result');
             if (mounted) {
               showDialog(
                 context: context,
@@ -261,28 +286,40 @@ class _ExpandableFabState extends State<ExpandableFab>
               );
             }
           } catch (e) {
+            print('API Error: $e');
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
+                  duration: Duration(seconds: 5),
                   content: Text('Error processing voice: $e'),
                   backgroundColor: Theme.of(context).colorScheme.error,
                 ),
               );
             }
           }
+        } else {
+          print('Path is null after stopping recorder');
         }
       } else {
         // Start recording
+        print('Checking permissions...');
         if (await _audioRecorder.hasPermission()) {
+          print('Permission granted');
           final directory = await getApplicationDocumentsDirectory();
-          final path = '${directory.path}/recording_${DateTime.now().millisecondsSinceEpoch}.m4a';
-          
-          await _audioRecorder.start(const RecordConfig(), path: path);
-          
+          final path =
+              '${directory.path}/recording_${DateTime.now().millisecondsSinceEpoch}.wav';
+          print('Starting recording to path: $path');
+
+          await _audioRecorder.start(
+            const RecordConfig(encoder: AudioEncoder.wav),
+            path: path,
+          );
+          print('Recording started');
+
           setState(() {
             _isRecording = true;
           });
-          
+
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -292,6 +329,7 @@ class _ExpandableFabState extends State<ExpandableFab>
             );
           }
         } else {
+          print('Permission denied');
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Microphone permission denied')),
@@ -300,13 +338,14 @@ class _ExpandableFabState extends State<ExpandableFab>
         }
       }
     } catch (e) {
+      print('Exception in _handleVoiceRecording: $e');
       setState(() {
         _isRecording = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error recording: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error recording: $e')));
       }
     }
   }
@@ -334,7 +373,7 @@ class _ExpandingActionButton extends StatelessWidget {
           -directionInDegrees * (math.pi / 180.0),
           progress.value * maxDistance,
         );
-        
+
         // Calculate position relative to bottom center
         // Stack is 300 wide, 250 high. Center is at 150.
         // Bottom is at 250.
@@ -343,14 +382,13 @@ class _ExpandingActionButton extends StatelessWidget {
         // Let's use left and bottom.
         // Center x = 150.
         // Center y (from bottom) = 28 (half of 56 fab size).
-        
+
         return Positioned(
           left: 150 + offset.dx - 28, // 150 is center, 28 is half button width
-          bottom: offset.dy * -1, // dy is negative for up, so multiply by -1 to get positive bottom value
-          child: Opacity(
-            opacity: progress.value,
-            child: child,
-          ),
+          bottom:
+              offset.dy *
+              -1, // dy is negative for up, so multiply by -1 to get positive bottom value
+          child: Opacity(opacity: progress.value, child: child),
         );
       },
       child: child,

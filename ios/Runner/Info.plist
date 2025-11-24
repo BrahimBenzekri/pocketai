@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We need access to your microphone to record voice commands.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>We need access to your camera to scan receipts.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need access to your photo library to pick receipt images.</string>
 </dict>
 </plist>

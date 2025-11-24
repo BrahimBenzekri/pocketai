@@ -1,5 +1,6 @@
 
 import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart';
 
 class ApiService {
   final Dio _dio = Dio();
@@ -27,7 +28,11 @@ class ApiService {
     try {
       String fileName = audioPath.split('/').last;
       FormData formData = FormData.fromMap({
-        "file": await MultipartFile.fromFile(audioPath, filename: fileName),
+        "file": await MultipartFile.fromFile(
+          audioPath,
+          filename: fileName,
+          contentType: MediaType('audio', 'wav'),
+        ),
       });
 
       Response response = await _dio.post(
@@ -36,6 +41,8 @@ class ApiService {
       );
 
       return response.data;
+    } on DioException catch (e) {
+      throw Exception('Failed to process voice command: ${e.response?.data ?? e.message}');
     } catch (e) {
       throw Exception('Failed to process voice command: $e');
     }
