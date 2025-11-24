@@ -112,12 +112,17 @@ class _ExpandableFabState extends State<ExpandableFab>
         icon: const Icon(Icons.edit),
         label: 'Manual Input',
       ),
-      _ActionButton(
-        onPressed: () => _onActionSelected('Voice'),
-        icon: Icon(_isRecording ? Icons.stop : Icons.mic),
-        label: _isRecording ? 'Stop Recording' : 'Voice Record',
-        backgroundColor: _isRecording ? Colors.red : null,
-        foregroundColor: _isRecording ? Colors.white : null,
+      // Voice button with hold-to-record
+      GestureDetector(
+        onLongPressStart: (_) => _startRecording(),
+        onLongPressEnd: (_) => _stopRecording(),
+        child: _ActionButton(
+          onPressed: () {}, // Empty function to keep button enabled
+          icon: const Icon(Icons.mic),
+          label: 'Hold to Record',
+          backgroundColor: _isRecording ? Colors.red : null,
+          foregroundColor: _isRecording ? Colors.white : null,
+        ),
       ),
       _ActionButton(
         onPressed: () => _onActionSelected('Camera'),
@@ -189,12 +194,6 @@ class _ExpandableFabState extends State<ExpandableFab>
   }
 
   Future<void> _onActionSelected(String action) async {
-    if (action == 'Voice') {
-      // Handle voice recording without closing the FAB immediately
-      await _handleVoiceRecording();
-      return;
-    }
-
     _toggle(); // Close FAB for other actions
 
     if (action == 'Camera') {
@@ -238,166 +237,232 @@ class _ExpandableFabState extends State<ExpandableFab>
     }
   }
 
-  Future<void> _handleVoiceRecording() async {
-    log('Handling voice recording. Current state: $_isRecording');
+  Future<void> _startRecording() async {
+    if (_isRecording) return; // Already recording
+
+    log('Starting voice recording...');
     try {
-      if (_isRecording) {
-        // Stop recording
-        log('Stopping recording...');
-        final path = await _audioRecorder.stop();
-        log('Recording stopped. Path returned: $path');
+      // Check permissions
+      log('Checking permissions...');
+      if (await _audioRecorder.hasPermission()) {
+        log('Permission granted');
+        final directory = await getApplicationDocumentsDirectory();
+        final path =
+            '${directory.path}/recording_${DateTime.now().millisecondsSinceEpoch}.wav';
+        log('Starting recording to path: $path');
+
+        await _audioRecorder.start(
+          const RecordConfig(encoder: AudioEncoder.wav),
+          path: path,
+        );
+        log('Recording started');
 
         setState(() {
-          _isRecording = false;
+          _isRecording = true;
         });
 
-        if (path != null && mounted) {
-          final file = File(path);
-          if (await file.exists()) {
-            final size = await file.length();
-            log('File exists. Size: $size bytes');
-            if (size == 0) {
-              log('WARNING: File is empty!');
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Error: Recorded file is empty'),
-                  ),
-                );
-              }
-              return;
-            }
-          } else {
-            log('WARNING: File does not exist at path: $path');
+        // Show recording overlay
+        if (mounted) {
+          _showRecordingOverlay();
+        }
+      } else {
+        log('Permission denied');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Microphone permission denied')),
+          );
+        }
+      }
+    } catch (e) {
+      log('Exception in _startRecording: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error starting recording: $e')));
+      }
+    }
+  }
+
+  Future<void> _stopRecording() async {
+    if (!_isRecording) return; // Not recording
+
+    log('Stopping recording...');
+    try {
+      final path = await _audioRecorder.stop();
+      log('Recording stopped. Path returned: $path');
+
+      setState(() {
+        _isRecording = false;
+      });
+
+      // Close recording overlay
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (path != null && mounted) {
+        final file = File(path);
+        if (await file.exists()) {
+          final size = await file.length();
+          log('File exists. Size: $size bytes');
+          if (size == 0) {
+            log('WARNING: File is empty!');
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Error: Recorded file not found')),
+                const SnackBar(content: Text('Error: Recorded file is empty')),
               );
             }
             return;
           }
-
+        } else {
+          log('WARNING: File does not exist at path: $path');
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Processing voice command...')),
+              const SnackBar(content: Text('Error: Recorded file not found')),
             );
           }
+          return;
+        }
 
-          _toggle(); // Close FAB after recording stops
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Processing voice command...')),
+          );
+        }
 
-          try {
-            log('Sending voice file to API...');
-            setState(() {
-              _isSending = true;
-            });
-            final result = await _apiService.sendVoice(path);
-            setState(() {
-              _isSending = false;
-            });
-            log('API Result: $result');
-            if (mounted) {
-              if (result['success'] == true && result['products'] != null) {
-                final products = result['products'] as List<dynamic>;
-                final confirmedItems = await showModalBottomSheet<List<Map<String, dynamic>>>(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (context) => VoiceResultDialog(products: products),
-                );
-
-                if (confirmedItems != null && mounted) {
-                  // TODO: Handle confirmed items (e.g., save to DB)
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Added ${confirmedItems.length} items successfully'),
-                      backgroundColor: Colors.green,
-                    ),
+        try {
+          log('Sending voice file to API...');
+          setState(() {
+            _isSending = true;
+          });
+          final result = await _apiService.sendVoice(path);
+          setState(() {
+            _isSending = false;
+          });
+          log('API Result: $result');
+          if (mounted) {
+            if (result['success'] == true && result['products'] != null) {
+              final products = result['products'] as List<dynamic>;
+              final confirmedItems =
+                  await showModalBottomSheet<List<Map<String, dynamic>>>(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => VoiceResultDialog(products: products),
                   );
-                }
-              } else {
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Voice Command Result'),
-                    content: SingleChildScrollView(
-                      child: Text(result['message'] ?? result.toString()),
+
+              if (confirmedItems != null && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Added ${confirmedItems.length} items successfully',
                     ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('OK'),
-                      ),
-                    ],
+                    backgroundColor: Colors.green,
                   ),
                 );
               }
-            }
-          } catch (e) {
-            log('API Error: $e');
-            setState(() {
-              _isSending = false;
-            });
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  duration: Duration(seconds: 5),
-                  content: Text('Error processing voice: $e'),
-                  backgroundColor: Theme.of(context).colorScheme.error,
+            } else {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Voice Command Result'),
+                  content: SingleChildScrollView(
+                    child: Text(result['message'] ?? result.toString()),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('OK'),
+                    ),
+                  ],
                 ),
               );
             }
           }
-        } else {
-          log('Path is null after stopping recorder');
-        }
-      } else {
-        // Start recording
-        log('Checking permissions...');
-        if (await _audioRecorder.hasPermission()) {
-          log('Permission granted');
-          final directory = await getApplicationDocumentsDirectory();
-          final path =
-              '${directory.path}/recording_${DateTime.now().millisecondsSinceEpoch}.wav';
-          log('Starting recording to path: $path');
-
-          await _audioRecorder.start(
-            const RecordConfig(encoder: AudioEncoder.wav),
-            path: path,
-          );
-          log('Recording started');
-
+        } catch (e) {
+          log('API Error: $e');
           setState(() {
-            _isRecording = true;
+            _isSending = false;
           });
-
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Recording... Tap stop when done.'),
-                duration: Duration(seconds: 1),
+              SnackBar(
+                duration: Duration(seconds: 5),
+                content: Text('Error processing voice: $e'),
+                backgroundColor: Theme.of(context).colorScheme.error,
               ),
             );
           }
-        } else {
-          log('Permission denied');
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Microphone permission denied')),
-            );
-          }
         }
+      } else {
+        log('Path is null after stopping recorder');
       }
     } catch (e) {
-      log('Exception in _handleVoiceRecording: $e');
+      log('Exception in _stopRecording: $e');
       setState(() {
         _isRecording = false;
       });
       if (mounted) {
+        Navigator.of(context).pop(); // Close overlay if open
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error recording: $e')));
+        ).showSnackBar(SnackBar(content: Text('Error stopping recording: $e')));
       }
     }
+  }
+
+  void _showRecordingOverlay() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => _RecordingOverlay(
+        onCancel: _cancelRecording,
+        onConfirm: _confirmRecording,
+      ),
+    );
+  }
+
+  Future<void> _cancelRecording() async {
+    if (!_isRecording) return;
+    
+    log('Cancelling recording...');
+    try {
+      final path = await _audioRecorder.stop();
+      
+      setState(() {
+        _isRecording = false;
+      });
+      
+      // Delete the file
+      if (path != null) {
+        final file = File(path);
+        if (await file.exists()) {
+          await file.delete();
+          log('Recording file deleted');
+        }
+      }
+      
+      // Close overlay
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Recording cancelled')),
+        );
+      }
+    } catch (e) {
+      log('Error cancelling recording: $e');
+      setState(() {
+        _isRecording = false;
+      });
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    }
+  }
+
+  Future<void> _confirmRecording() async {
+    // This will call the existing _stopRecording logic
+    await _stopRecording();
   }
 }
 
@@ -472,6 +537,174 @@ class _ActionButton extends StatelessWidget {
         onPressed: onPressed,
         icon: icon,
         color: foregroundColor ?? Theme.of(context).colorScheme.onSecondary,
+      ),
+    );
+  }
+}
+
+// Recording Overlay Widget
+class _RecordingOverlay extends StatefulWidget {
+  final VoidCallback onCancel;
+  final VoidCallback onConfirm;
+
+  const _RecordingOverlay({
+    required this.onCancel,
+    required this.onConfirm,
+  });
+
+  @override
+  State<_RecordingOverlay> createState() => _RecordingOverlayState();
+}
+
+class _RecordingOverlayState extends State<_RecordingOverlay>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+  int _seconds = 0;
+  late DateTime _startTime;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTime = DateTime.now();
+
+    // Pulsing animation
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 0.9, end: 1.1).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    // Update timer every second
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(seconds: 1));
+      if (mounted) {
+        setState(() {
+          _seconds = DateTime.now().difference(_startTime).inSeconds;
+        });
+        return true;
+      }
+      return false;
+    });
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  String _formatDuration(int seconds) {
+    final minutes = seconds ~/ 60;
+    final secs = seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black.withValues(alpha: 0.85),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Pulsing microphone icon
+            AnimatedBuilder(
+              animation: _pulseAnimation,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: _pulseAnimation.value,
+                  child: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withValues(alpha: 0.5),
+                          blurRadius: 30,
+                          spreadRadius: 10,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.mic, color: Colors.white, size: 60),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 40),
+            // Timer
+            Text(
+              _formatDuration(_seconds),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 48,
+                fontWeight: FontWeight.bold,
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Recording text
+            const Text(
+              'Recording...',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 60),
+            // Action buttons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Cancel button
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: IconButton(
+                    onPressed: widget.onCancel,
+                    icon: const Icon(Icons.close, color: Colors.white, size: 32),
+                    iconSize: 60,
+                  ),
+                ),
+                const SizedBox(width: 60),
+                // Confirm button
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.green.withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: IconButton(
+                    onPressed: widget.onConfirm,
+                    icon: const Icon(Icons.check, color: Colors.white, size: 32),
+                    iconSize: 60,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

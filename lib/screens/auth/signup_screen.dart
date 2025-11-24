@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pocketai/widgets/main_navigator.dart';
+import 'package:pocketai/screens/auth/onboarding_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -26,10 +26,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   void _signUp() {
-    // For presentation, just navigate to the main app
+    // Navigate to onboarding screen to collect additional user data
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => const MainNavigator()),
+      MaterialPageRoute(builder: (context) => const OnboardingScreen()),
       (route) => false,
     );
   }
