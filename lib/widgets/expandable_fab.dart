@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'dart:io';
@@ -226,13 +228,13 @@ class _ExpandableFabState extends State<ExpandableFab>
   }
 
   Future<void> _handleVoiceRecording() async {
-    print('Handling voice recording. Current state: $_isRecording');
+    log('Handling voice recording. Current state: $_isRecording');
     try {
       if (_isRecording) {
         // Stop recording
-        print('Stopping recording...');
+        log('Stopping recording...');
         final path = await _audioRecorder.stop();
-        print('Recording stopped. Path returned: $path');
+        log('Recording stopped. Path returned: $path');
 
         setState(() {
           _isRecording = false;
@@ -242,32 +244,40 @@ class _ExpandableFabState extends State<ExpandableFab>
           final file = File(path);
           if (await file.exists()) {
             final size = await file.length();
-            print('File exists. Size: $size bytes');
+            log('File exists. Size: $size bytes');
             if (size == 0) {
-              print('WARNING: File is empty!');
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Error: Recorded file is empty')),
-              );
+              log('WARNING: File is empty!');
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Error: Recorded file is empty'),
+                  ),
+                );
+              }
               return;
             }
           } else {
-            print('WARNING: File does not exist at path: $path');
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Error: Recorded file not found')),
-            );
+            log('WARNING: File does not exist at path: $path');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Error: Recorded file not found')),
+              );
+            }
             return;
           }
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Processing voice command...')),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Processing voice command...')),
+            );
+          }
 
           _toggle(); // Close FAB after recording stops
 
           try {
-            print('Sending voice file to API...');
+            log('Sending voice file to API...');
             final result = await _apiService.sendVoice(path);
-            print('API Result: $result');
+            log('API Result: $result');
             if (mounted) {
               showDialog(
                 context: context,
@@ -286,7 +296,7 @@ class _ExpandableFabState extends State<ExpandableFab>
               );
             }
           } catch (e) {
-            print('API Error: $e');
+            log('API Error: $e');
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -298,23 +308,23 @@ class _ExpandableFabState extends State<ExpandableFab>
             }
           }
         } else {
-          print('Path is null after stopping recorder');
+          log('Path is null after stopping recorder');
         }
       } else {
         // Start recording
-        print('Checking permissions...');
+        log('Checking permissions...');
         if (await _audioRecorder.hasPermission()) {
-          print('Permission granted');
+          log('Permission granted');
           final directory = await getApplicationDocumentsDirectory();
           final path =
               '${directory.path}/recording_${DateTime.now().millisecondsSinceEpoch}.wav';
-          print('Starting recording to path: $path');
+          log('Starting recording to path: $path');
 
           await _audioRecorder.start(
             const RecordConfig(encoder: AudioEncoder.wav),
             path: path,
           );
-          print('Recording started');
+          log('Recording started');
 
           setState(() {
             _isRecording = true;
@@ -329,7 +339,7 @@ class _ExpandableFabState extends State<ExpandableFab>
             );
           }
         } else {
-          print('Permission denied');
+          log('Permission denied');
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Microphone permission denied')),
@@ -338,7 +348,7 @@ class _ExpandableFabState extends State<ExpandableFab>
         }
       }
     } catch (e) {
-      print('Exception in _handleVoiceRecording: $e');
+      log('Exception in _handleVoiceRecording: $e');
       setState(() {
         _isRecording = false;
       });

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:pocketai/screens/home_screen.dart';
 import 'package:pocketai/screens/chatbot_screen.dart';
+import 'package:pocketai/screens/profile_screen.dart';
+import 'package:pocketai/screens/stats_screen.dart';
 import 'package:pocketai/widgets/custom_bottom_nav_bar.dart';
 import 'package:pocketai/widgets/expandable_fab.dart';
 
@@ -28,8 +30,8 @@ class _MainNavigatorState extends State<MainNavigator> {
         children: [
           HomeScreen(onNavigate: _onNavigate),
           const ChatbotScreen(),
-          const Placeholder(), // Stats screen
-          const Placeholder(), // Profile screen
+          const StatsScreen(),
+          const ProfileScreen(),
         ],
       ),
       floatingActionButton: const ExpandableFab(),

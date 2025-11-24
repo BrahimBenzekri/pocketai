@@ -1,6 +1,7 @@
 
 import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
+import 'package:flutter/foundation.dart';
 
 class ApiService {
   final Dio _dio = Dio();
@@ -8,6 +9,7 @@ class ApiService {
 
   Future<Map<String, dynamic>> sendOCR(String imagePath) async {
     try {
+      debugPrint('Sending OCR request for image: $imagePath');
       String fileName = imagePath.split('/').last;
       FormData formData = FormData.fromMap({
         "file": await MultipartFile.fromFile(imagePath, filename: fileName),
@@ -18,8 +20,10 @@ class ApiService {
         data: formData,
       );
 
+      debugPrint('OCR request successful: ${response.data}');
       return response.data;
     } catch (e) {
+      debugPrint('OCR request failed: $e');
       throw Exception('Failed to process receipt: $e');
     }
   }
