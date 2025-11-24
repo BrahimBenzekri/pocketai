@@ -54,7 +54,8 @@ class _ExpandableFabState extends State<ExpandableFab>
     return Padding(
       padding: const EdgeInsets.only(bottom: 30.0),
       child: SizedBox(
-        height: 250, // Sufficient height for expansion
+        height: 250,
+        width: 300, // Ensure enough width for fanning out
         child: Stack(
           alignment: Alignment.bottomCenter,
           clipBehavior: Clip.none,
@@ -227,41 +228,26 @@ class _ExpandingActionButton extends StatelessWidget {
     return AnimatedBuilder(
       animation: progress,
       builder: (context, child) {
-        // final offset = Offset.fromDirection(
-        //   directionInDegrees * (math.pi / 180.0),
-        //   progress.value * maxDistance,
-        // );
-        // We want the buttons to fan out upwards.
-        // 0 degrees is right, 90 is down, 180 is left, 270 is up.
-        // Let's adjust the angle calculation in the parent or here.
-        // Let's assume the parent passes correct angles for "upwards" fan.
-        // Actually, let's simplify.
-
-        // Let's just use simple translation for now based on index.
-        // But to match the sketch (fan out), we need angles.
-        // Sketch shows: Left, Up, Right.
-        // So angles: 225 (bottom-left? no), 180 (left), 270 (up), 0 (right).
-        // Sketch shows 3 buttons above the FAB.
-        // Let's map them to:
-        // 1. Left-ish (150 deg)
-        // 2. Up (90 deg - wait, in Flutter 0 is right, 90 is down. So -90 is up.)
-        // 3. Right-ish (30 deg)
-
-        // Use Positioned.fill to ensure the container covers the entire stack area,
-        // allowing hit tests to reach the transformed button even when it moves up.
-        return Positioned.fill(
-          child: Container(
-            alignment: Alignment.bottomCenter,
-            padding: const EdgeInsets.only(
-              bottom: 4,
-            ), // Adjust for FAB height/padding if needed
-            child: Transform.translate(
-              offset: Offset.fromDirection(
-                -directionInDegrees * (math.pi / 180.0), // Negative for up
-                progress.value * maxDistance,
-              ),
-              child: Opacity(opacity: progress.value, child: child),
-            ),
+        final offset = Offset.fromDirection(
+          -directionInDegrees * (math.pi / 180.0),
+          progress.value * maxDistance,
+        );
+        
+        // Calculate position relative to bottom center
+        // Stack is 300 wide, 250 high. Center is at 150.
+        // Bottom is at 250.
+        // We want to position the button center at (150 + dx, 250 + dy)
+        // But Positioned works with left/right/top/bottom.
+        // Let's use left and bottom.
+        // Center x = 150.
+        // Center y (from bottom) = 28 (half of 56 fab size).
+        
+        return Positioned(
+          left: 150 + offset.dx - 28, // 150 is center, 28 is half button width
+          bottom: offset.dy * -1, // dy is negative for up, so multiply by -1 to get positive bottom value
+          child: Opacity(
+            opacity: progress.value,
+            child: child,
           ),
         );
       },
