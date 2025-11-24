@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import 'package:permission_handler/permission_handler.dart';
 
 class VoiceRecorderDialog extends StatefulWidget {
   const VoiceRecorderDialog({super.key});
@@ -22,12 +21,7 @@ class _VoiceRecorderDialogState extends State<VoiceRecorderDialog> {
   }
 
   Future<void> _initSpeech() async {
-    var status = await Permission.microphone.request();
-    if (status != PermissionStatus.granted) {
-      setState(() => _text = 'Microphone permission denied');
-      return;
-    }
-
+    // Initialize speech engine. This usually triggers permission request if needed.
     bool available = await _speech.initialize(
       onStatus: (val) {
         if (mounted) {
@@ -51,19 +45,33 @@ class _VoiceRecorderDialogState extends State<VoiceRecorderDialog> {
     );
 
     if (available) {
+      // Auto-start listening if available
       _startListening();
     } else {
-      setState(() => _text = 'Speech recognition not available');
+      setState(() => _text = 'Speech recognition not available or permission denied');
     }
   }
 
-  void _startListening() {
-    _speech.listen(
-      onResult: (val) => setState(() {
-        _text = val.recognizedWords;
-      }),
-    );
-    setState(() => _isListening = true);
+  void _startListening() async {
+    if (!_speech.isAvailable) {
+      setState(() => _text = 'Speech recognition not initialized');
+      await _initSpeech(); // Try to initialize again
+      if (!_speech.isAvailable) return;
+    }
+
+    try {
+      await _speech.listen(
+        onResult: (val) => setState(() {
+          _text = val.recognizedWords;
+        }),
+      );
+      setState(() => _isListening = true);
+    } catch (e) {
+      setState(() {
+        _isListening = false;
+        _text = 'Error starting recording: $e';
+      });
+    }
   }
 
   void _stopListening() {
