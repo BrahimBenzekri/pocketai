@@ -51,7 +51,7 @@ class HomeScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '15,230,000 DA',
+                          '5,230,000 DA',
                           style: Theme.of(context).textTheme.headlineLarge
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
