@@ -4,6 +4,11 @@ import 'package:image_picker/image_picker.dart';
 import 'package:pocketai/screens/receipt_preview_screen.dart';
 import 'package:pocketai/widgets/manual_input_dialog.dart';
 
+
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
+import 'package:pocketai/services/api_service.dart';
+
 class ExpandableFab extends StatefulWidget {
   const ExpandableFab({super.key});
 
@@ -17,6 +22,11 @@ class _ExpandableFabState extends State<ExpandableFab>
   late Animation<double> _expandAnimation;
   bool _isOpen = false;
   final ImagePicker _picker = ImagePicker();
+  
+  // Voice Recording
+  final AudioRecorder _audioRecorder = AudioRecorder();
+  bool _isRecording = false;
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
@@ -35,6 +45,7 @@ class _ExpandableFabState extends State<ExpandableFab>
   @override
   void dispose() {
     _controller.dispose();
+    _audioRecorder.dispose();
     super.dispose();
   }
 
@@ -99,8 +110,10 @@ class _ExpandableFabState extends State<ExpandableFab>
       ),
       _ActionButton(
         onPressed: () => _onActionSelected('Voice'),
-        icon: const Icon(Icons.mic),
-        label: 'Voice Record',
+        icon: Icon(_isRecording ? Icons.stop : Icons.mic),
+        label: _isRecording ? 'Stop Recording' : 'Voice Record',
+        backgroundColor: _isRecording ? Colors.red : null,
+        foregroundColor: _isRecording ? Colors.white : null,
       ),
       _ActionButton(
         onPressed: () => _onActionSelected('Camera'),
@@ -163,7 +176,14 @@ class _ExpandableFabState extends State<ExpandableFab>
   }
 
   Future<void> _onActionSelected(String action) async {
-    _toggle();
+    if (action == 'Voice') {
+      // Handle voice recording without closing the FAB immediately
+      await _handleVoiceRecording();
+      return;
+    }
+
+    _toggle(); // Close FAB for other actions
+
     if (action == 'Camera') {
       try {
         final XFile? photo = await _picker.pickImage(
@@ -184,10 +204,6 @@ class _ExpandableFabState extends State<ExpandableFab>
           ).showSnackBar(SnackBar(content: Text('Error accessing camera: $e')));
         }
       }
-    } else if (action == 'Voice') {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Voice input coming soon!')));
     } else {
       // Manual Input
       final result = await showModalBottomSheet<Map<String, String>>(
@@ -204,6 +220,92 @@ class _ExpandableFabState extends State<ExpandableFab>
               'Added: ${result['quantity']}x ${result['name']} - ${result['price']} DA',
             ),
           ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleVoiceRecording() async {
+    try {
+      if (_isRecording) {
+        // Stop recording
+        final path = await _audioRecorder.stop();
+        setState(() {
+          _isRecording = false;
+        });
+
+        if (path != null && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Processing voice command...')),
+          );
+          
+          _toggle(); // Close FAB after recording stops
+
+          try {
+            final result = await _apiService.sendVoice(path);
+            if (mounted) {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Voice Command Result'),
+                  content: SingleChildScrollView(
+                    child: Text(result.toString()),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            }
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Error processing voice: $e'),
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                ),
+              );
+            }
+          }
+        }
+      } else {
+        // Start recording
+        if (await _audioRecorder.hasPermission()) {
+          final directory = await getApplicationDocumentsDirectory();
+          final path = '${directory.path}/recording_${DateTime.now().millisecondsSinceEpoch}.m4a';
+          
+          await _audioRecorder.start(const RecordConfig(), path: path);
+          
+          setState(() {
+            _isRecording = true;
+          });
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Recording... Tap stop when done.'),
+                duration: Duration(seconds: 1),
+              ),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Microphone permission denied')),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _isRecording = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error recording: $e')),
         );
       }
     }
@@ -261,23 +363,27 @@ class _ActionButton extends StatelessWidget {
     this.onPressed,
     required this.icon,
     required this.label,
+    this.backgroundColor,
+    this.foregroundColor,
   });
 
   final VoidCallback? onPressed;
   final Widget icon;
   final String label;
+  final Color? backgroundColor;
+  final Color? foregroundColor;
 
   @override
   Widget build(BuildContext context) {
     return Material(
       shape: const CircleBorder(),
       clipBehavior: Clip.antiAlias,
-      color: Theme.of(context).colorScheme.secondary,
+      color: backgroundColor ?? Theme.of(context).colorScheme.secondary,
       elevation: 8,
       child: IconButton(
         onPressed: onPressed,
         icon: icon,
-        color: Theme.of(context).colorScheme.onSecondary,
+        color: foregroundColor ?? Theme.of(context).colorScheme.onSecondary,
       ),
     );
   }
