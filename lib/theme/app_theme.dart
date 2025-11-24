@@ -48,4 +48,37 @@ class AppTheme {
       ),
     );
   }
+
+  // Premium Light Theme Colors
+  static const Color lightBackgroundColor = Color(0xFFF8F9FA);
+  static const Color lightSurfaceColor = Colors.white;
+  static const Color lightOnBackground = Color(0xFF1A1A1A);
+  static const Color lightTextSecondary = Color(0xFF6B7280);
+
+  static ThemeData get lightTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: lightBackgroundColor,
+      primaryColor: primaryColor,
+      colorScheme: const ColorScheme.light(
+        primary: primaryColor,
+        secondary: secondaryColor,
+        surface: lightSurfaceColor,
+        error: errorColor,
+        onPrimary: onPrimary,
+        onSurface: lightOnBackground,
+      ),
+      textTheme: GoogleFonts.outfitTextTheme(ThemeData.light().textTheme).apply(
+        bodyColor: lightOnBackground,
+        displayColor: lightOnBackground,
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        foregroundColor: lightOnBackground,
+      ),
+    );
+  }
 }
