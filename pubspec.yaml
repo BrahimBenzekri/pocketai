@@ -14,7 +14,6 @@ dependencies:
   font_awesome_flutter: ^10.6.0
   flutter_svg: ^2.0.9
   image_picker: ^1.0.4
-  speech_to_text: ^7.3.0
 
 dev_dependencies:
   flutter_test:

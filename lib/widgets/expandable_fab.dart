@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'package:image_picker/image_picker.dart';
 import 'package:pocketai/screens/receipt_preview_screen.dart';
-import 'package:pocketai/widgets/voice_recorder_dialog.dart';
 
 class ExpandableFab extends StatefulWidget {
   const ExpandableFab({super.key});
@@ -181,19 +180,9 @@ class _ExpandableFabState extends State<ExpandableFab>
         }
       }
     } else if (action == 'Voice') {
-      final result = await showModalBottomSheet<String>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (context) => const VoiceRecorderDialog(),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Voice input coming soon!')),
       );
-
-      if (result != null && result.isNotEmpty && mounted) {
-        // Simulate sending to backend
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Sending to backend: $result')),
-        );
-      }
     } else {
       ScaffoldMessenger.of(
         context,
