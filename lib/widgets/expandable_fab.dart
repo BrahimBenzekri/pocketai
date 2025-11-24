@@ -10,6 +10,7 @@ import 'package:pocketai/widgets/manual_input_dialog.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import 'package:pocketai/services/api_service.dart';
+import 'package:pocketai/widgets/voice_result_dialog.dart';
 
 class ExpandableFab extends StatefulWidget {
   const ExpandableFab({super.key});
@@ -28,6 +29,7 @@ class _ExpandableFabState extends State<ExpandableFab>
   // Voice Recording
   final AudioRecorder _audioRecorder = AudioRecorder();
   bool _isRecording = false;
+  bool _isSending = false;
   final ApiService _apiService = ApiService();
 
   @override
@@ -170,7 +172,16 @@ class _ExpandableFabState extends State<ExpandableFab>
           duration: const Duration(milliseconds: 250),
           child: FloatingActionButton(
             onPressed: _toggle,
-            child: const Icon(Icons.add),
+            child: _isSending
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2.5,
+                    ),
+                  )
+                : const Icon(Icons.add),
           ),
         ),
       ),
@@ -276,27 +287,56 @@ class _ExpandableFabState extends State<ExpandableFab>
 
           try {
             log('Sending voice file to API...');
+            setState(() {
+              _isSending = true;
+            });
             final result = await _apiService.sendVoice(path);
+            setState(() {
+              _isSending = false;
+            });
             log('API Result: $result');
             if (mounted) {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Voice Command Result'),
-                  content: SingleChildScrollView(
-                    child: Text(result.toString()),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('OK'),
+              if (result['success'] == true && result['products'] != null) {
+                final products = result['products'] as List<dynamic>;
+                final confirmedItems = await showModalBottomSheet<List<Map<String, dynamic>>>(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => VoiceResultDialog(products: products),
+                );
+
+                if (confirmedItems != null && mounted) {
+                  // TODO: Handle confirmed items (e.g., save to DB)
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Added ${confirmedItems.length} items successfully'),
+                      backgroundColor: Colors.green,
                     ),
-                  ],
-                ),
-              );
+                  );
+                }
+              } else {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Voice Command Result'),
+                    content: SingleChildScrollView(
+                      child: Text(result['message'] ?? result.toString()),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('OK'),
+                      ),
+                    ],
+                  ),
+                );
+              }
             }
           } catch (e) {
             log('API Error: $e');
+            setState(() {
+              _isSending = false;
+            });
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
