@@ -4,7 +4,7 @@ import 'package:pocketai/widgets/custom_bottom_nav_bar.dart';
 class HomeScreen extends StatelessWidget {
   final Function(int)? onNavigate;
 
-  const HomeScreen({super.key, this.onNavigate});
+  HomeScreen({super.key, this.onNavigate});
 
   @override
   Widget build(BuildContext context) {
@@ -171,6 +171,7 @@ class HomeScreen extends StatelessWidget {
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: 3,
                           itemBuilder: (context, index) {
+                            final transaction = _transactions[index];
                             return Container(
                               margin: const EdgeInsets.only(bottom: 12),
                               padding: const EdgeInsets.all(16),
@@ -183,14 +184,13 @@ class HomeScreen extends StatelessWidget {
                                   Container(
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: Theme.of(
-                                        context,
-                                      ).primaryColor.withValues(alpha: 0.1),
+                                      color: (transaction['color'] as Color)
+                                          .withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Icon(
-                                      Icons.shopping_bag,
-                                      color: Theme.of(context).primaryColor,
+                                      transaction['icon'] as IconData,
+                                      color: transaction['color'] as Color,
                                     ),
                                   ),
                                   const SizedBox(width: 16),
@@ -200,7 +200,7 @@ class HomeScreen extends StatelessWidget {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'Groceries',
+                                          transaction['item'] as String,
                                           style: Theme.of(context)
                                               .textTheme
                                               .titleSmall
@@ -210,7 +210,7 @@ class HomeScreen extends StatelessWidget {
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          'Today, 10:30 AM',
+                                          '${transaction['quantity']} items • ${transaction['time']}',
                                           style: Theme.of(context)
                                               .textTheme
                                               .bodySmall
@@ -220,7 +220,7 @@ class HomeScreen extends StatelessWidget {
                                     ),
                                   ),
                                   Text(
-                                    '-${(index + 1) * 250} DA',
+                                    '-${transaction['price']} DA',
                                     style: Theme.of(context)
                                         .textTheme
                                         .titleMedium
@@ -373,63 +373,70 @@ class HomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     ...List.generate(
-                      10,
-                      (index) => Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: _getCategoryColor(
-                                  index,
-                                ).withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(12),
+                      _transactions.length,
+                      (index) {
+                        final transaction = _transactions[index];
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: (transaction['color'] as Color)
+                                      .withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  transaction['icon'] as IconData,
+                                  color: transaction['color'] as Color,
+                                ),
                               ),
-                              child: Icon(
-                                _getCategoryIcon(index),
-                                color: _getCategoryColor(index),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      transaction['item'] as String,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleSmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${transaction['quantity']} items • ${transaction['time']}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(color: Colors.grey),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    _getExpenseName(index),
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleSmall
-                                        ?.copyWith(fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _getCategoryName(index),
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(color: Colors.grey),
-                                  ),
-                                ],
+                              Text(
+                                '-${transaction['price']} DA',
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color:
+                                          Theme.of(context).colorScheme.error,
+                                    ),
                               ),
-                            ),
-                            Text(
-                              '-${(index + 1) * 100} DA',
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).colorScheme.error,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 80), // Space for bottom nav
                   ],
@@ -455,6 +462,89 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+
+  final List<Map<String, dynamic>> _transactions = [
+    {
+      'item': 'Pizza',
+      'quantity': 2,
+      'price': 800,
+      'icon': Icons.local_pizza,
+      'color': Colors.orange,
+      'time': 'Today, 12:30 PM',
+    },
+    {
+      'item': 'Coke',
+      'quantity': 3,
+      'price': 300,
+      'icon': Icons.local_drink,
+      'color': Colors.red,
+      'time': 'Today, 12:35 PM',
+    },
+    {
+      'item': 'Taxi Ride',
+      'quantity': 1,
+      'price': 600,
+      'icon': Icons.directions_car,
+      'color': Colors.blue,
+      'time': 'Today, 09:00 AM',
+    },
+    {
+      'item': 'Groceries',
+      'quantity': 12,
+      'price': 4500,
+      'icon': Icons.shopping_bag,
+      'color': Colors.purple,
+      'time': 'Yesterday, 06:15 PM',
+    },
+    {
+      'item': 'Coffee',
+      'quantity': 1,
+      'price': 250,
+      'icon': Icons.coffee,
+      'color': Colors.brown,
+      'time': 'Yesterday, 08:30 AM',
+    },
+    {
+      'item': 'Cinema Ticket',
+      'quantity': 2,
+      'price': 1600,
+      'icon': Icons.movie,
+      'color': Colors.indigo,
+      'time': '22 Nov, 08:00 PM',
+    },
+    {
+      'item': 'Popcorn',
+      'quantity': 1,
+      'price': 400,
+      'icon': Icons.fastfood,
+      'color': Colors.amber,
+      'time': '22 Nov, 08:15 PM',
+    },
+    {
+      'item': 'Gym Subscription',
+      'quantity': 1,
+      'price': 3500,
+      'icon': Icons.fitness_center,
+      'color': Colors.teal,
+      'time': '20 Nov, 10:00 AM',
+    },
+    {
+      'item': 'Notebooks',
+      'quantity': 4,
+      'price': 800,
+      'icon': Icons.book,
+      'color': Colors.green,
+      'time': '19 Nov, 04:30 PM',
+    },
+    {
+      'item': 'Cat Food',
+      'quantity': 2,
+      'price': 1200,
+      'icon': Icons.pets,
+      'color': Colors.cyan,
+      'time': '18 Nov, 05:45 PM',
+    },
+  ];
 
   Widget _buildCategoryRow(
     BuildContext context,
@@ -503,69 +593,5 @@ class HomeScreen extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  IconData _getCategoryIcon(int index) {
-    final icons = [
-      Icons.fastfood,
-      Icons.directions_car,
-      Icons.shopping_bag,
-      Icons.electric_bolt,
-      Icons.movie,
-      Icons.medical_services,
-      Icons.school,
-      Icons.home,
-      Icons.fitness_center,
-      Icons.pets,
-    ];
-    return icons[index % icons.length];
-  }
-
-  Color _getCategoryColor(int index) {
-    final colors = [
-      Colors.orange,
-      Colors.blue,
-      Colors.pink,
-      Colors.green,
-      Colors.purple,
-      Colors.red,
-      Colors.teal,
-      Colors.amber,
-      Colors.indigo,
-      Colors.cyan,
-    ];
-    return colors[index % colors.length];
-  }
-
-  String _getExpenseName(int index) {
-    final names = [
-      'Restaurant',
-      'Uber',
-      'Groceries',
-      'Electricity Bill',
-      'Cinema',
-      'Pharmacy',
-      'Books',
-      'Rent',
-      'Gym',
-      'Pet Food',
-    ];
-    return names[index % names.length];
-  }
-
-  String _getCategoryName(int index) {
-    final categories = [
-      'Food & Dining',
-      'Transport',
-      'Shopping',
-      'Bills',
-      'Entertainment',
-      'Health',
-      'Education',
-      'Housing',
-      'Fitness',
-      'Pets',
-    ];
-    return categories[index % categories.length];
   }
 }

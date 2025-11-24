@@ -15,7 +15,7 @@ class MainApp extends StatelessWidget {
       title: 'PocketAI',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const HomeScreen(),
+      home: HomeScreen(),
     );
   }
 }
