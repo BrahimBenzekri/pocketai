@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import 'package:image_picker/image_picker.dart';
+import 'package:pocketai/screens/receipt_preview_screen.dart';
+import 'package:pocketai/widgets/voice_recorder_dialog.dart';
 
 class ExpandableFab extends StatefulWidget {
   const ExpandableFab({super.key});
@@ -8,10 +11,12 @@ class ExpandableFab extends StatefulWidget {
   State<ExpandableFab> createState() => _ExpandableFabState();
 }
 
-class _ExpandableFabState extends State<ExpandableFab> with SingleTickerProviderStateMixin {
+class _ExpandableFabState extends State<ExpandableFab>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _expandAnimation;
   bool _isOpen = false;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -73,10 +78,7 @@ class _ExpandableFabState extends State<ExpandableFab> with SingleTickerProvider
             onTap: _toggle,
             child: Padding(
               padding: const EdgeInsets.all(8),
-              child: Icon(
-                Icons.close,
-                color: Theme.of(context).primaryColor,
-              ),
+              child: Icon(Icons.close, color: Theme.of(context).primaryColor),
             ),
           ),
         ),
@@ -87,9 +89,9 @@ class _ExpandableFabState extends State<ExpandableFab> with SingleTickerProvider
   List<Widget> _buildExpandingActionButtons() {
     final children = <Widget>[
       _ActionButton(
-        onPressed: () => _onActionSelected('Camera'),
-        icon: const Icon(Icons.camera_alt),
-        label: 'Scan Receipt',
+        onPressed: () => _onActionSelected('Manual'),
+        icon: const Icon(Icons.edit),
+        label: 'Manual Input',
       ),
       _ActionButton(
         onPressed: () => _onActionSelected('Voice'),
@@ -97,9 +99,9 @@ class _ExpandableFabState extends State<ExpandableFab> with SingleTickerProvider
         label: 'Voice Record',
       ),
       _ActionButton(
-        onPressed: () => _onActionSelected('Manual'),
-        icon: const Icon(Icons.edit),
-        label: 'Manual Input',
+        onPressed: () => _onActionSelected('Camera'),
+        icon: const Icon(Icons.camera_alt),
+        label: 'Scan Receipt',
       ),
     ];
 
@@ -118,7 +120,7 @@ class _ExpandableFabState extends State<ExpandableFab> with SingleTickerProvider
       // Manual (2) -> 135 (Left-Up)
       // If we want Camera on the left, we should reverse or adjust.
       // Let's make Camera 135 (Left-Up), Voice 90, Manual 45.
-      
+
       final step = 90.0 / (count - 1);
       final angle = 135.0 - (index * step);
 
@@ -156,11 +158,47 @@ class _ExpandableFabState extends State<ExpandableFab> with SingleTickerProvider
     );
   }
 
-  void _onActionSelected(String action) {
+  Future<void> _onActionSelected(String action) async {
     _toggle();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Selected: $action')),
-    );
+    if (action == 'Camera') {
+      try {
+        final XFile? photo = await _picker.pickImage(
+          source: ImageSource.camera,
+        );
+        if (photo != null && mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ReceiptPreviewScreen(imagePath: photo.path),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error accessing camera: $e')));
+        }
+      }
+    } else if (action == 'Voice') {
+      final result = await showModalBottomSheet<String>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => const VoiceRecorderDialog(),
+      );
+
+      if (result != null && result.isNotEmpty && mounted) {
+        // Simulate sending to backend
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Sending to backend: $result')),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Selected: $action')));
+    }
   }
 }
 
@@ -191,7 +229,7 @@ class _ExpandingActionButton extends StatelessWidget {
         // Let's adjust the angle calculation in the parent or here.
         // Let's assume the parent passes correct angles for "upwards" fan.
         // Actually, let's simplify.
-        
+
         // Let's just use simple translation for now based on index.
         // But to match the sketch (fan out), we need angles.
         // Sketch shows: Left, Up, Right.
@@ -201,25 +239,21 @@ class _ExpandingActionButton extends StatelessWidget {
         // 1. Left-ish (150 deg)
         // 2. Up (90 deg - wait, in Flutter 0 is right, 90 is down. So -90 is up.)
         // 3. Right-ish (30 deg)
-        
-        // Let's override the logic in parent.
-        return Positioned(
-          right: 0,
-          left: 0,
-          bottom: 0, // Align to bottom
-          // top: 0, // Do not stretch to top
+
+        // Use Positioned.fill to ensure the container covers the entire stack area,
+        // allowing hit tests to reach the transformed button even when it moves up.
+        return Positioned.fill(
           child: Container(
             alignment: Alignment.bottomCenter,
-            padding: const EdgeInsets.only(bottom: 4), // Adjust for FAB height/padding if needed
+            padding: const EdgeInsets.only(
+              bottom: 4,
+            ), // Adjust for FAB height/padding if needed
             child: Transform.translate(
               offset: Offset.fromDirection(
-                 -directionInDegrees * (math.pi / 180.0), // Negative for up
+                -directionInDegrees * (math.pi / 180.0), // Negative for up
                 progress.value * maxDistance,
               ),
-              child: Opacity(
-                opacity: progress.value,
-                child: child,
-              ),
+              child: Opacity(opacity: progress.value, child: child),
             ),
           ),
         );
