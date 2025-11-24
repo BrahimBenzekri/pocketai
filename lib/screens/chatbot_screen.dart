@@ -17,7 +17,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     // Add welcome message
     _messages.add(
       ChatMessage(
-        text: 'Hello! I\'m your AI expense assistant. How can I help you manage your finances today?',
+        text:
+            'Hello! I\'m your AI expense assistant. How can I help you manage your finances today?',
         isUser: false,
         timestamp: DateTime.now(),
       ),
@@ -65,9 +66,11 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     final lowerMessage = message.toLowerCase();
     if (lowerMessage.contains('spent') || lowerMessage.contains('expense')) {
       return 'You\'ve spent 2000 DA this month. Your top category is Food & Dining at 900 DA.';
-    } else if (lowerMessage.contains('save') || lowerMessage.contains('budget')) {
+    } else if (lowerMessage.contains('save') ||
+        lowerMessage.contains('budget')) {
       return 'Based on your spending patterns, I recommend setting aside 500 DA per week for savings.';
-    } else if (lowerMessage.contains('category') || lowerMessage.contains('categories')) {
+    } else if (lowerMessage.contains('category') ||
+        lowerMessage.contains('categories')) {
       return 'Your expenses are distributed across: Food (45%), Transport (30%), Shopping (15%), and Others (10%).';
     } else {
       return 'I\'m here to help you track and analyze your expenses. You can ask me about your spending, budget recommendations, or category breakdowns!';
@@ -77,6 +80,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('AI Assistant'),
         automaticallyImplyLeading: false,
@@ -95,7 +99,14 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             ),
           ),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 16,
+              bottom: MediaQuery.of(context).viewInsets.bottom > 0
+                  ? MediaQuery.of(context).viewInsets.bottom
+                  : 16,
+            ),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
               boxShadow: [
@@ -106,32 +117,30 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                 ),
               ],
             ),
-            child: SafeArea(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _messageController,
-                      decoration: InputDecoration(
-                        hintText: 'Ask me anything...',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _messageController,
+                    decoration: InputDecoration(
+                      hintText: 'Ask me anything...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
                       ),
-                      onSubmitted: (_) => _sendMessage(),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
                     ),
+                    onSubmitted: (_) => _sendMessage(),
                   ),
-                  const SizedBox(width: 12),
-                  FloatingActionButton(
-                    onPressed: _sendMessage,
-                    child: const Icon(Icons.send),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 12),
+                FloatingActionButton(
+                  onPressed: _sendMessage,
+                  child: const Icon(Icons.send),
+                ),
+              ],
             ),
           ),
         ],
@@ -162,8 +171,9 @@ class ChatBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
-        mainAxisAlignment:
-            message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: message.isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!message.isUser) ...[
