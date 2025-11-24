@@ -2,7 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class CustomBottomNavBar extends StatelessWidget {
-  const CustomBottomNavBar({super.key});
+  final Function(int) onTap;
+  final int currentIndex;
+
+  const CustomBottomNavBar({
+    super.key,
+    required this.onTap,
+    this.currentIndex = 0,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -23,21 +30,41 @@ class CustomBottomNavBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           IconButton(
-            icon: const FaIcon(FontAwesomeIcons.house),
-            onPressed: () {},
+            icon: FaIcon(
+              FontAwesomeIcons.house,
+              color: currentIndex == 0
+                  ? Theme.of(context).primaryColor
+                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+            onPressed: () => onTap(0),
           ),
           IconButton(
-            icon: const FaIcon(FontAwesomeIcons.comments),
-            onPressed: () {},
+            icon: FaIcon(
+              FontAwesomeIcons.comments,
+              color: currentIndex == 1
+                  ? Theme.of(context).primaryColor
+                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+            onPressed: () => onTap(1),
           ),
           const SizedBox(width: 48), // Space for FAB
           IconButton(
-            icon: const FaIcon(FontAwesomeIcons.chartLine),
-            onPressed: () {},
+            icon: FaIcon(
+              FontAwesomeIcons.chartLine,
+              color: currentIndex == 2
+                  ? Theme.of(context).primaryColor
+                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+            onPressed: () => onTap(2),
           ),
           IconButton(
-            icon: const FaIcon(FontAwesomeIcons.user),
-            onPressed: () {},
+            icon: FaIcon(
+              FontAwesomeIcons.user,
+              color: currentIndex == 3
+                  ? Theme.of(context).primaryColor
+                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+            onPressed: () => onTap(3),
           ),
         ],
       ),

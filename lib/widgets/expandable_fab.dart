@@ -51,16 +51,19 @@ class _ExpandableFabState extends State<ExpandableFab>
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 250, // Sufficient height for expansion
-      child: Stack(
-        alignment: Alignment.bottomCenter,
-        clipBehavior: Clip.none,
-        children: [
-          _buildTapToCloseFab(),
-          ..._buildExpandingActionButtons(),
-          _buildTapToOpenFab(),
-        ],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 30.0),
+      child: SizedBox(
+        height: 250, // Sufficient height for expansion
+        child: Stack(
+          alignment: Alignment.bottomCenter,
+          clipBehavior: Clip.none,
+          children: [
+            _buildTapToCloseFab(),
+            ..._buildExpandingActionButtons(),
+            _buildTapToOpenFab(),
+          ],
+        ),
       ),
     );
   }
@@ -181,9 +184,9 @@ class _ExpandableFabState extends State<ExpandableFab>
         }
       }
     } else if (action == 'Voice') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Voice input coming soon!')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Voice input coming soon!')));
     } else {
       // Manual Input
       final result = await showModalBottomSheet<Map<String, String>>(

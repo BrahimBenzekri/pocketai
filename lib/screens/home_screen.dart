@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:pocketai/widgets/custom_bottom_nav_bar.dart';
-import 'package:pocketai/widgets/expandable_fab.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  final Function(int)? onNavigate;
+
+  const HomeScreen({super.key, this.onNavigate});
 
   @override
   Widget build(BuildContext context) {
@@ -285,14 +286,18 @@ class HomeScreen extends StatelessWidget {
                       children: [
                         Text(
                           'Spending Overview',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                            color: Theme.of(
+                              context,
+                            ).primaryColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -311,7 +316,9 @@ class HomeScreen extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Column(
@@ -319,9 +326,8 @@ class HomeScreen extends StatelessWidget {
                         children: [
                           Text(
                             'Top Categories',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 16),
                           _buildCategoryRow(
@@ -372,7 +378,9 @@ class HomeScreen extends StatelessWidget {
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Row(
@@ -380,7 +388,9 @@ class HomeScreen extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: _getCategoryColor(index).withValues(alpha: 0.1),
+                                color: _getCategoryColor(
+                                  index,
+                                ).withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Icon(
@@ -395,26 +405,27 @@ class HomeScreen extends StatelessWidget {
                                 children: [
                                   Text(
                                     _getExpenseName(index),
-                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall
+                                        ?.copyWith(fontWeight: FontWeight.bold),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     _getCategoryName(index),
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Colors.grey,
-                                    ),
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(color: Colors.grey),
                                   ),
                                 ],
                               ),
                             ),
                             Text(
                               '-${(index + 1) * 100} DA',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.error,
-                              ),
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
                             ),
                           ],
                         ),
@@ -427,18 +438,18 @@ class HomeScreen extends StatelessWidget {
             },
           ),
           // Floating Bottom Nav Bar
-          const Positioned(
+          Positioned(
             left: 16,
             right: 16,
             bottom: 16,
-            child: CustomBottomNavBar(),
-          ),
-          // Floating Action Button
-          const Positioned(
-            bottom: 30, // Elevated position
-            left: 0,
-            right: 0,
-            child: ExpandableFab(),
+            child: CustomBottomNavBar(
+              currentIndex: 0,
+              onTap: (index) {
+                if (onNavigate != null) {
+                  onNavigate!(index);
+                }
+              },
+            ),
           ),
         ],
       ),
@@ -469,17 +480,14 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  category,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
+                Text(category, style: Theme.of(context).textTheme.bodyMedium),
               ],
             ),
             Text(
               amount,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),
