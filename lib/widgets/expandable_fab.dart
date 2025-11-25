@@ -11,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import 'package:pocketai/services/api_service.dart';
 import 'package:pocketai/widgets/voice_result_dialog.dart';
+import 'package:image/image.dart' as img;
 
 class ExpandableFab extends StatefulWidget {
   const ExpandableFab({super.key});
@@ -202,12 +203,36 @@ class _ExpandableFabState extends State<ExpandableFab>
           source: ImageSource.camera,
         );
         if (photo != null && mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ReceiptPreviewScreen(imagePath: photo.path),
+          // Show loading indicator
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const Center(
+              child: CircularProgressIndicator(),
             ),
           );
+
+          // Compress the image
+          final compressedPath = await _compressImage(photo.path);
+
+          // Close loading indicator
+          if (mounted) {
+            Navigator.pop(context);
+          }
+
+          if (compressedPath != null && mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    ReceiptPreviewScreen(imagePath: compressedPath),
+              ),
+            );
+          } else if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Error compressing image')),
+            );
+          }
         }
       } catch (e) {
         if (mounted) {
@@ -234,6 +259,47 @@ class _ExpandableFabState extends State<ExpandableFab>
           ),
         );
       }
+    }
+  }
+
+  Future<String?> _compressImage(String imagePath) async {
+    try {
+      // Read the image file
+      final imageFile = File(imagePath);
+      final imageBytes = await imageFile.readAsBytes();
+
+      // Decode the image
+      final image = img.decodeImage(imageBytes);
+      if (image == null) return null;
+
+      // Resize if too large (max 1024px on longest side)
+      img.Image resized = image;
+      if (image.width > 1024 || image.height > 1024) {
+        if (image.width > image.height) {
+          resized = img.copyResize(image, width: 1024);
+        } else {
+          resized = img.copyResize(image, height: 1024);
+        }
+      }
+
+      // Compress as JPEG with 85% quality
+      final compressedBytes = img.encodeJpg(resized, quality: 85);
+
+      // Save to a new file
+      final directory = await getApplicationDocumentsDirectory();
+      final compressedPath =
+          '${directory.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final compressedFile = File(compressedPath);
+      await compressedFile.writeAsBytes(compressedBytes);
+
+      log('Original size: ${imageBytes.length} bytes');
+      log('Compressed size: ${compressedBytes.length} bytes');
+      log('Compression ratio: ${(compressedBytes.length / imageBytes.length * 100).toStringAsFixed(1)}%');
+
+      return compressedPath;
+    } catch (e) {
+      log('Error compressing image: $e');
+      return null;
     }
   }
 

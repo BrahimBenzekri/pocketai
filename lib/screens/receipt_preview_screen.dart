@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:pocketai/services/api_service.dart';
+import 'package:pocketai/widgets/voice_result_dialog.dart';
 
 class ReceiptPreviewScreen extends StatefulWidget {
   final String imagePath;
@@ -23,25 +24,51 @@ class _ReceiptPreviewScreenState extends State<ReceiptPreviewScreen> {
     try {
       final result = await _apiService.sendOCR(widget.imagePath);
       if (mounted) {
-        // Show result in a dialog for now
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Analysis Result'),
-            content: SingleChildScrollView(
-              child: Text(result.toString()),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  Navigator.pop(context); // Close preview screen
-                },
-                child: const Text('Done'),
+        // Check if we have products in the response
+        if (result['success'] == true && result['products'] != null) {
+          final products = result['products'] as List<dynamic>;
+          
+          // Show products in editable dialog (same as voice input)
+          final confirmedItems =
+              await showModalBottomSheet<List<Map<String, dynamic>>>(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (context) => VoiceResultDialog(products: products),
+          );
+
+          if (confirmedItems != null && mounted) {
+            Navigator.pop(context); // Close preview screen
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Added ${confirmedItems.length} items successfully',
+                ),
+                backgroundColor: Colors.green,
               ),
-            ],
-          ),
-        );
+            );
+          }
+        } else {
+          // Fallback: show raw result if format is unexpected
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Analysis Result'),
+              content: SingleChildScrollView(
+                child: Text(result['message'] ?? result.toString()),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context); // Close dialog
+                    Navigator.pop(context); // Close preview screen
+                  },
+                  child: const Text('Done'),
+                ),
+              ],
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
