@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+enum TransactionType { expense, income }
+
 class ManualInputDialog extends StatefulWidget {
   const ManualInputDialog({super.key});
 
@@ -12,6 +14,8 @@ class _ManualInputDialogState extends State<ManualInputDialog> {
   final _nameController = TextEditingController();
   final _priceController = TextEditingController();
   final _quantityController = TextEditingController();
+  
+  TransactionType _transactionType = TransactionType.expense;
 
   @override
   void dispose() {
@@ -23,17 +27,26 @@ class _ManualInputDialogState extends State<ManualInputDialog> {
 
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
-      final expense = {
+      final transaction = {
         'name': _nameController.text,
         'price': _priceController.text,
-        'quantity': _quantityController.text,
+        'type': _transactionType.name, // 'expense' or 'income'
       };
-      Navigator.pop(context, expense);
+      
+      // Only include quantity for expenses
+      if (_transactionType == TransactionType.expense) {
+        transaction['quantity'] = _quantityController.text;
+      }
+      
+      Navigator.pop(context, transaction);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isExpense = _transactionType == TransactionType.expense;
+    
     return Container(
       padding: EdgeInsets.only(
         left: 24,
@@ -42,7 +55,7 @@ class _ManualInputDialogState extends State<ManualInputDialog> {
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: theme.colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: SingleChildScrollView(
@@ -53,22 +66,66 @@ class _ManualInputDialogState extends State<ManualInputDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Add Expense',
-                style: Theme.of(context).textTheme.titleLarge,
+                isExpense ? 'Add Expense' : 'Add Income',
+                style: theme.textTheme.titleLarge,
+              ),
+              const SizedBox(height: 16),
+              
+              // Transaction Type Selector
+              Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _TransactionTypeButton(
+                        label: 'Expense',
+                        icon: Icons.remove_circle_outline,
+                        isSelected: isExpense,
+                        color: Colors.red,
+                        onTap: () {
+                          setState(() {
+                            _transactionType = TransactionType.expense;
+                          });
+                        },
+                      ),
+                    ),
+                    Expanded(
+                      child: _TransactionTypeButton(
+                        label: 'Income',
+                        icon: Icons.add_circle_outline,
+                        isSelected: !isExpense,
+                        color: Colors.green,
+                        onTap: () {
+                          setState(() {
+                            _transactionType = TransactionType.income;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
+              
               TextFormField(
                 controller: _nameController,
                 decoration: InputDecoration(
-                  labelText: 'Item Name',
+                  labelText: isExpense ? 'Item Name' : 'Income Source',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  prefixIcon: const Icon(Icons.shopping_bag),
+                  prefixIcon: Icon(
+                    isExpense ? Icons.shopping_bag : Icons.work_outline,
+                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter item name';
+                    return isExpense 
+                        ? 'Please enter item name' 
+                        : 'Please enter income source';
                   }
                   return null;
                 },
@@ -78,7 +135,7 @@ class _ManualInputDialogState extends State<ManualInputDialog> {
                 controller: _priceController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
-                  labelText: 'Price (DA)',
+                  labelText: isExpense ? 'Price (DA)' : 'Amount (DA)',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -86,7 +143,7 @@ class _ManualInputDialogState extends State<ManualInputDialog> {
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter price';
+                    return 'Please enter amount';
                   }
                   if (double.tryParse(value) == null) {
                     return 'Please enter a valid number';
@@ -94,27 +151,30 @@ class _ManualInputDialogState extends State<ManualInputDialog> {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _quantityController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'Quantity',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+              // Only show quantity field for expenses
+              if (isExpense) ...[
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _quantityController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Quantity',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    prefixIcon: const Icon(Icons.numbers),
                   ),
-                  prefixIcon: const Icon(Icons.numbers),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter quantity';
+                    }
+                    if (int.tryParse(value) == null) {
+                      return 'Please enter a valid number';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter quantity';
-                  }
-                  if (int.tryParse(value) == null) {
-                    return 'Please enter a valid number';
-                  }
-                  return null;
-                },
-              ),
+              ],
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -126,12 +186,77 @@ class _ManualInputDialogState extends State<ManualInputDialog> {
                   const SizedBox(width: 16),
                   FilledButton(
                     onPressed: _submitForm,
-                    child: const Text('Add Expense'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: isExpense 
+                          ? null 
+                          : Colors.green,
+                    ),
+                    child: Text(isExpense ? 'Add Expense' : 'Add Income'),
                   ),
                 ],
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TransactionTypeButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _TransactionTypeButton({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? color.withValues(alpha: 0.15) 
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: isSelected 
+              ? Border.all(color: color, width: 2) 
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: isSelected 
+                  ? color 
+                  : theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected 
+                    ? color 
+                    : theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
         ),
       ),
     );

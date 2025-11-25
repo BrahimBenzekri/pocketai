@@ -280,27 +280,31 @@ class HomeScreen extends StatelessWidget {
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          '${transaction['quantity']} items • ${transaction['time']}',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodySmall
-                                              ?.copyWith(color: Colors.grey),
-                                        ),
+                                    transaction['type'] == 'income'
+                                        ? transaction['time'] as String
+                                        : '${transaction['quantity']} items • ${transaction['time']}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(color: Colors.grey),
+                                  ),
                                       ],
                                     ),
                                   ),
                                   Text(
-                                    '-${transaction['price']} DA',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.error,
-                                        ),
-                                  ),
+                                  transaction['type'] == 'income'
+                                      ? '+${transaction['price']} DA'
+                                      : '-${transaction['price']} DA',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: transaction['type'] == 'income'
+                                            ? Colors.green
+                                            : Theme.of(context).colorScheme.error,
+                                      ),
+                                ),
                                 ],
                               ),
                             );
@@ -481,19 +485,25 @@ class HomeScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    '${transaction['quantity']} items • ${transaction['time']}',
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(color: Colors.grey),
-                                  ),
+                                  transaction['type'] == 'income'
+                                      ? transaction['time'] as String
+                                      : '${transaction['quantity']} items • ${transaction['time']}',
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(color: Colors.grey),
+                                ),
                                 ],
                               ),
                             ),
                             Text(
-                              '-${transaction['price']} DA',
+                              transaction['type'] == 'income'
+                                  ? '+${transaction['price']} DA'
+                                  : '-${transaction['price']} DA',
                               style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).colorScheme.error,
+                                    color: transaction['type'] == 'income'
+                                        ? Colors.green
+                                        : Theme.of(context).colorScheme.error,
                                   ),
                             ),
                           ],
@@ -527,12 +537,22 @@ class HomeScreen extends StatelessWidget {
 
   final List<Map<String, dynamic>> _transactions = [
     {
+      'item': 'Freelance Project',
+      'quantity': 1,
+      'price': 15000,
+      'icon': Icons.work_outline,
+      'color': Colors.green,
+      'time': 'Today, 02:00 PM',
+      'type': 'income',
+    },
+    {
       'item': 'Pizza',
       'quantity': 2,
       'price': 800,
       'icon': Icons.local_pizza,
       'color': Colors.orange,
       'time': 'Today, 12:30 PM',
+      'type': 'expense',
     },
     {
       'item': 'Coke',
@@ -541,6 +561,7 @@ class HomeScreen extends StatelessWidget {
       'icon': Icons.local_drink,
       'color': Colors.red,
       'time': 'Today, 12:35 PM',
+      'type': 'expense',
     },
     {
       'item': 'Taxi Ride',
@@ -549,6 +570,16 @@ class HomeScreen extends StatelessWidget {
       'icon': Icons.directions_car,
       'color': Colors.blue,
       'time': 'Today, 09:00 AM',
+      'type': 'expense',
+    },
+    {
+      'item': 'Salary',
+      'quantity': 1,
+      'price': 45000,
+      'icon': Icons.account_balance_wallet,
+      'color': Colors.green,
+      'time': 'Yesterday, 09:00 AM',
+      'type': 'income',
     },
     {
       'item': 'Groceries',
@@ -557,6 +588,7 @@ class HomeScreen extends StatelessWidget {
       'icon': Icons.shopping_bag,
       'color': Colors.purple,
       'time': 'Yesterday, 06:15 PM',
+      'type': 'expense',
     },
     {
       'item': 'Coffee',
@@ -565,6 +597,7 @@ class HomeScreen extends StatelessWidget {
       'icon': Icons.coffee,
       'color': Colors.brown,
       'time': 'Yesterday, 08:30 AM',
+      'type': 'expense',
     },
     {
       'item': 'Cinema Ticket',
@@ -573,6 +606,7 @@ class HomeScreen extends StatelessWidget {
       'icon': Icons.movie,
       'color': Colors.indigo,
       'time': '22 Nov, 08:00 PM',
+      'type': 'expense',
     },
     {
       'item': 'Popcorn',
@@ -581,6 +615,16 @@ class HomeScreen extends StatelessWidget {
       'icon': Icons.fastfood,
       'color': Colors.amber,
       'time': '22 Nov, 08:15 PM',
+      'type': 'expense',
+    },
+    {
+      'item': 'Side Gig Payment',
+      'quantity': 1,
+      'price': 8000,
+      'icon': Icons.monetization_on,
+      'color': Colors.green,
+      'time': '21 Nov, 03:00 PM',
+      'type': 'income',
     },
     {
       'item': 'Gym Subscription',
@@ -589,6 +633,7 @@ class HomeScreen extends StatelessWidget {
       'icon': Icons.fitness_center,
       'color': Colors.teal,
       'time': '20 Nov, 10:00 AM',
+      'type': 'expense',
     },
     {
       'item': 'Notebooks',
@@ -597,6 +642,7 @@ class HomeScreen extends StatelessWidget {
       'icon': Icons.book,
       'color': Colors.green,
       'time': '19 Nov, 04:30 PM',
+      'type': 'expense',
     },
     {
       'item': 'Cat Food',
@@ -605,6 +651,7 @@ class HomeScreen extends StatelessWidget {
       'icon': Icons.pets,
       'color': Colors.cyan,
       'time': '18 Nov, 05:45 PM',
+      'type': 'expense',
     },
   ];
 

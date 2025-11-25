@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pocketai/services/api_service.dart';
 
 class ChatbotScreen extends StatefulWidget {
   const ChatbotScreen({super.key});
@@ -10,6 +11,8 @@ class ChatbotScreen extends StatefulWidget {
 class _ChatbotScreenState extends State<ChatbotScreen> {
   final TextEditingController _messageController = TextEditingController();
   final List<ChatMessage> _messages = [];
+  final ApiService _apiService = ApiService();
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -31,49 +34,49 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     super.dispose();
   }
 
-  void _sendMessage() {
+  Future<void> _sendMessage() async {
     if (_messageController.text.trim().isEmpty) return;
 
+    final userMessage = _messageController.text;
+    
     setState(() {
       _messages.add(
         ChatMessage(
-          text: _messageController.text,
+          text: userMessage,
           isUser: true,
           timestamp: DateTime.now(),
         ),
       );
+      _isLoading = true;
     });
 
-    final userMessage = _messageController.text;
     _messageController.clear();
 
-    // Simulate AI response
-    Future.delayed(const Duration(seconds: 1), () {
+    try {
+      // Call the AI assist API
+      final aiResponse = await _apiService.sendAIAssist(userMessage);
+      
       setState(() {
         _messages.add(
           ChatMessage(
-            text: _getAIResponse(userMessage),
+            text: aiResponse,
             isUser: false,
             timestamp: DateTime.now(),
           ),
         );
+        _isLoading = false;
       });
-    });
-  }
-
-  String _getAIResponse(String message) {
-    // Simple mock responses
-    final lowerMessage = message.toLowerCase();
-    if (lowerMessage.contains('spent') || lowerMessage.contains('expense')) {
-      return 'You\'ve spent 2000 DA this month. Your top category is Food & Dining at 900 DA.';
-    } else if (lowerMessage.contains('save') ||
-        lowerMessage.contains('budget')) {
-      return 'Based on your spending patterns, I recommend setting aside 500 DA per week for savings.';
-    } else if (lowerMessage.contains('category') ||
-        lowerMessage.contains('categories')) {
-      return 'Your expenses are distributed across: Food (45%), Transport (30%), Shopping (15%), and Others (10%).';
-    } else {
-      return 'I\'m here to help you track and analyze your expenses. You can ask me about your spending, budget recommendations, or category breakdowns!';
+    } catch (e) {
+      setState(() {
+        _messages.add(
+          ChatMessage(
+            text: 'Sorry, I encountered an error processing your request. Please try again.',
+            isUser: false,
+            timestamp: DateTime.now(),
+          ),
+        );
+        _isLoading = false;
+      });
     }
   }
 
@@ -98,6 +101,57 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               },
             ),
           ),
+          if (_isLoading)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Icon(
+                      Icons.smart_toy,
+                      color: Theme.of(context).primaryColor,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Theme.of(context).primaryColor,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Thinking...',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Container(
             padding: EdgeInsets.only(
               left: 16,

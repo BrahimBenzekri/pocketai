@@ -1,4 +1,3 @@
-
 import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:flutter/foundation.dart';
@@ -46,9 +45,38 @@ class ApiService {
 
       return response.data;
     } on DioException catch (e) {
-      throw Exception('Failed to process voice command: ${e.response?.data ?? e.message}');
+      throw Exception(
+        'Failed to process voice command: ${e.response?.data ?? e.message}',
+      );
     } catch (e) {
       throw Exception('Failed to process voice command: $e');
+    }
+  }
+
+  Future<String> sendAIAssist(String message) async {
+    try {
+      debugPrint('Sending AI assist request: $message');
+
+      Response response = await _dio.post(
+        'https://7219876e52f6.ngrok-free.app/chat',
+        data: {'message': message},
+      );
+
+      debugPrint('AI assist response: ${response.data}');
+
+      if (response.data is Map && response.data.containsKey('response')) {
+        return response.data['response'] as String;
+      }
+
+      throw Exception('Invalid response format from AI assist');
+    } on DioException catch (e) {
+      debugPrint('AI assist request failed: ${e.response?.data ?? e.message}');
+      throw Exception(
+        'Failed to get AI response: ${e.response?.data ?? e.message}',
+      );
+    } catch (e) {
+      debugPrint('AI assist request failed: $e');
+      throw Exception('Failed to get AI response: $e');
     }
   }
 }
