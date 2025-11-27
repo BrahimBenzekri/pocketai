@@ -280,31 +280,33 @@ class HomeScreen extends StatelessWidget {
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                    transaction['type'] == 'income'
-                                        ? transaction['time'] as String
-                                        : '${transaction['quantity']} items • ${transaction['time']}',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.copyWith(color: Colors.grey),
-                                  ),
+                                          transaction['type'] == 'income'
+                                              ? transaction['time'] as String
+                                              : '${transaction['quantity']} items • ${transaction['time']}',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(color: Colors.grey),
+                                        ),
                                       ],
                                     ),
                                   ),
                                   Text(
-                                  transaction['type'] == 'income'
-                                      ? '+${transaction['price']} DA'
-                                      : '-${transaction['price']} DA',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: transaction['type'] == 'income'
-                                            ? Colors.green
-                                            : Theme.of(context).colorScheme.error,
-                                      ),
-                                ),
+                                    transaction['type'] == 'income'
+                                        ? '+${transaction['price']} DA'
+                                        : '-${transaction['price']} DA',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: transaction['type'] == 'income'
+                                              ? Colors.green
+                                              : Theme.of(
+                                                  context,
+                                                ).colorScheme.error,
+                                        ),
+                                  ),
                                 ],
                               ),
                             );
@@ -360,7 +362,7 @@ class HomeScreen extends StatelessWidget {
                       children: [
                         Text(
                           'Spending Overview',
-                          style: Theme.of(context).textTheme.headlineSmall
+                          style: Theme.of(context).textTheme.bodyLarge
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         Container(
@@ -485,12 +487,12 @@ class HomeScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                  transaction['type'] == 'income'
-                                      ? transaction['time'] as String
-                                      : '${transaction['quantity']} items • ${transaction['time']}',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(color: Colors.grey),
-                                ),
+                                    transaction['type'] == 'income'
+                                        ? transaction['time'] as String
+                                        : '${transaction['quantity']} items • ${transaction['time']}',
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(color: Colors.grey),
+                                  ),
                                 ],
                               ),
                             ),

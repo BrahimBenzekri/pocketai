@@ -23,7 +23,7 @@ class ApiService {
       return response.data;
     } catch (e) {
       debugPrint('OCR request failed: $e');
-      throw Exception('Failed to process receipt: $e');
+      throw Exception('Failed to process receipt');
     }
   }
 
@@ -44,10 +44,8 @@ class ApiService {
       );
 
       return response.data;
-    } on DioException catch (e) {
-      throw Exception(
-        'Failed to process voice command: ${e.response?.data ?? e.message}',
-      );
+    } on DioException {
+      throw Exception('Failed to process voice command.');
     } catch (e) {
       throw Exception('Failed to process voice command: $e');
     }
@@ -58,7 +56,7 @@ class ApiService {
       debugPrint('Sending AI assist request: $message');
 
       Response response = await _dio.post(
-        'https://7219876e52f6.ngrok-free.app/chat',
+        'https://348512666c7a.ngrok-free.app/chat',
         data: {'message': message},
       );
 

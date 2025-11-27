@@ -114,16 +114,11 @@ class _ExpandableFabState extends State<ExpandableFab>
         label: 'Manual Input',
       ),
       // Voice button with hold-to-record
-      GestureDetector(
-        onLongPressStart: (_) => _startRecording(),
-        onLongPressEnd: (_) => _stopRecording(),
-        child: _ActionButton(
-          onPressed: () {}, // Empty function to keep button enabled
-          icon: const Icon(Icons.mic),
-          label: 'Hold to Record',
-          backgroundColor: _isRecording ? Colors.red : null,
-          foregroundColor: _isRecording ? Colors.white : null,
-        ),
+      // Voice button with tap-to-record
+      _ActionButton(
+        onPressed: () => _onActionSelected('Voice'),
+        icon: const Icon(Icons.mic),
+        label: 'Voice Input',
       ),
       _ActionButton(
         onPressed: () => _onActionSelected('Camera'),
@@ -241,6 +236,9 @@ class _ExpandableFabState extends State<ExpandableFab>
           ).showSnackBar(SnackBar(content: Text('Error accessing camera: $e')));
         }
       }
+    } else if (action == 'Voice') {
+      // Start recording immediately
+      _startRecording();
     } else {
       // Manual Input
       final result = await showModalBottomSheet<Map<String, String>>(
@@ -582,27 +580,23 @@ class _ActionButton extends StatelessWidget {
     this.onPressed,
     required this.icon,
     required this.label,
-    this.backgroundColor,
-    this.foregroundColor,
   });
 
   final VoidCallback? onPressed;
   final Widget icon;
   final String label;
-  final Color? backgroundColor;
-  final Color? foregroundColor;
 
   @override
   Widget build(BuildContext context) {
     return Material(
       shape: const CircleBorder(),
       clipBehavior: Clip.antiAlias,
-      color: backgroundColor ?? Theme.of(context).colorScheme.secondary,
+      color: Theme.of(context).colorScheme.secondary,
       elevation: 8,
       child: IconButton(
         onPressed: onPressed,
         icon: icon,
-        color: foregroundColor ?? Theme.of(context).colorScheme.onSecondary,
+        color: Theme.of(context).colorScheme.onSecondary,
       ),
     );
   }

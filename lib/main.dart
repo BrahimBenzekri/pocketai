@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pocketai/widgets/main_navigator.dart';
+import 'package:pocketai/screens/auth/login_screen.dart';
 import 'package:pocketai/theme/app_theme.dart';
 
 void main() {
@@ -15,7 +15,7 @@ class MainApp extends StatelessWidget {
       title: 'PocketAI',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const MainNavigator(),
+      home: const LoginScreen(),
     );
   }
 }
